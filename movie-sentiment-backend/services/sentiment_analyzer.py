@@ -40,25 +40,34 @@ class SentimentAnalyzer:
         self.emotion_pipe = None
         self.explainer = None
         self.ml_enabled = False
+        self.models_loaded = False
 
+    def _load_models(self):
+        if self.models_loaded:
+            return
         try:
+            import os
             import torch
             from lime.lime_text import LimeTextExplainer
             from transformers import pipeline
 
+            device = os.getenv("MODEL_DEVICE", "-1")
+            device = int(device) if device.isdigit() else (-1 if device.lower() == "cpu" else 0)
+
             self.sentiment_pipe = pipeline(
                 "sentiment-analysis",
                 model="distilbert-base-uncased-finetuned-sst-2-english",
-                device=0 if torch.cuda.is_available() else -1,
+                device=device,
             )
             self.emotion_pipe = pipeline(
                 "text-classification",
                 model="j-hartmann/emotion-english-distilroberta-base",
-                device=0 if torch.cuda.is_available() else -1,
+                device=device,
                 top_k=None,
             )
             self.explainer = LimeTextExplainer(class_names=["Negative", "Positive"])
             self.ml_enabled = True
+            self.models_loaded = True
             logger.info("Sentiment analyzer models loaded successfully")
         except Exception as exc:
             logger.warning(
@@ -111,6 +120,7 @@ class SentimentAnalyzer:
         if rating_based_sentiment:
             return rating_based_sentiment
 
+        self._load_models()
         if self.ml_enabled and self.sentiment_pipe is not None:
             try:
                 result = self.sentiment_pipe(text)[0]
@@ -143,6 +153,7 @@ class SentimentAnalyzer:
     def predict_emotions(self, text: str) -> Dict[str, float]:
         text = (text or "")[:512]
 
+        self._load_models()
         if self.ml_enabled and self.emotion_pipe is not None:
             try:
                 results = self.emotion_pipe(text)[0]
@@ -168,6 +179,7 @@ class SentimentAnalyzer:
     def get_important_words(self, text: str) -> List[str]:
         text = (text or "")[:512]
 
+        self._load_models()
         if self.ml_enabled and self.explainer is not None and self.sentiment_pipe is not None:
             try:
                 import numpy as np
