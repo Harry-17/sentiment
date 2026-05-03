@@ -30,16 +30,25 @@ app = FastAPI(
 )
 
 
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "").strip()
+ALLOWED_ORIGINS = [
+    origin for origin in {
+        FRONTEND_URL,
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    }
+    if origin
+]
+
+if not ALLOWED_ORIGINS:
+    ALLOWED_ORIGINS = ["*"]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        FRONTEND_URL,   # dynamic (Render env)
-        "http://localhost:3000",
-        "http://localhost:5173",
-    ],
-    allow_credentials=True,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=False if ALLOWED_ORIGINS == ["*"] else True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
