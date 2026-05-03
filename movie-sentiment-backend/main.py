@@ -45,13 +45,33 @@ app.add_middleware(
 )
 
 # Initialize services
-sentiment_analyzer = SentimentAnalyzer()
-aspect_sentiment_analyzer = AspectSentimentAnalyzer()
-imdb_scraper = IMDbScraper()
-verdict_generator = VerdictGenerator()
-youtube_analyzer = YouTubeAnalyzer(api_key=os.getenv("YOUTUBE_API_KEY", ""))
-product_analyzer = ProductAnalyzer(api_key=os.getenv("SERPAPI_KEY", ""))
-comparison_engine = ComparisonEngine()
+# Global placeholders
+sentiment_analyzer = None
+aspect_sentiment_analyzer = None
+imdb_scraper = None
+verdict_generator = None
+youtube_analyzer = None
+product_analyzer = None
+comparison_engine = None
+
+
+@app.on_event("startup")
+async def load_services():
+    global sentiment_analyzer, aspect_sentiment_analyzer
+    global imdb_scraper, verdict_generator
+    global youtube_analyzer, product_analyzer, comparison_engine
+
+    print("🚀 Loading services...")
+
+    sentiment_analyzer = SentimentAnalyzer()
+    aspect_sentiment_analyzer = AspectSentimentAnalyzer()
+    imdb_scraper = IMDbScraper()
+    verdict_generator = VerdictGenerator()
+    youtube_analyzer = YouTubeAnalyzer(api_key=os.getenv("YOUTUBE_API_KEY", ""))
+    product_analyzer = ProductAnalyzer(api_key=os.getenv("SERPAPI_KEY", ""))
+    comparison_engine = ComparisonEngine()
+
+    print("✅ Services loaded")
 
 # Request/Response Models
 class MovieAnalysisRequest(BaseModel):
