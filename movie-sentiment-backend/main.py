@@ -2,6 +2,7 @@ import asyncio
 import logging
 import os
 from collections import Counter
+from threading import Thread
 from typing import Any, Dict, List, Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -30,25 +31,10 @@ app = FastAPI(
 )
 
 
-FRONTEND_URL = os.getenv("FRONTEND_URL", "").strip()
-ALLOWED_ORIGINS = [
-    origin for origin in {
-        FRONTEND_URL,
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    }
-    if origin
-]
-
-if not ALLOWED_ORIGINS:
-    ALLOWED_ORIGINS = ["*"]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=False if ALLOWED_ORIGINS == ["*"] else True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -80,6 +66,15 @@ async def load_services():
     product_analyzer = ProductAnalyzer(api_key=os.getenv("SERPAPI_KEY", ""))
     comparison_engine = ComparisonEngine()
 
+    def warm_up_models():
+        try:
+            logger.info("Starting background model warm-up")
+            sentiment_analyzer._load_models()
+            logger.info("Background model warm-up complete")
+        except Exception as exc:
+            logger.warning("Background model warm-up failed: %s", exc)
+
+    Thread(target=warm_up_models, daemon=True).start()
     print("✅ Services loaded")
 
 # Request/Response Models
