@@ -39,6 +39,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+MAX_MOVIE_REVIEWS = int(os.getenv("MAX_MOVIE_REVIEWS", "40"))
+
 # Initialize services
 # Global placeholders
 sentiment_analyzer = None
@@ -417,8 +419,8 @@ async def analyze_movie(request: MovieAnalysisRequest):
         
         logger.info(f"Analyzing movie: {movie_identifier}")
         
-        # Scrape IMDb data
-        movie_data, reviews = await imdb_scraper.fetch_movie_data(movie_identifier)
+        # Scrape IMDb data with a smaller review batch for faster response times
+        movie_data, reviews = await imdb_scraper.fetch_movie_data(movie_identifier, limit=MAX_MOVIE_REVIEWS)
         
         if not reviews or len(reviews) == 0:
             raise HTTPException(status_code=404, detail="No reviews found for this movie")
@@ -548,7 +550,7 @@ async def analyze_movie_aspects(request: MovieAspectAnalysisRequest):
         movie_identifier = _resolve_movie_identifier(request.movie_name, request.imdb_link)
         logger.info("Analyzing movie aspects for: %s", movie_identifier)
 
-        movie_data, reviews = await imdb_scraper.fetch_movie_data(movie_identifier)
+        movie_data, reviews = await imdb_scraper.fetch_movie_data(movie_identifier, limit=MAX_MOVIE_REVIEWS)
         if not reviews:
             raise HTTPException(status_code=404, detail="No reviews found for this movie")
 

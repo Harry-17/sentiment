@@ -43,12 +43,13 @@ class IMDbScraper:
         "short": 5,
     }
 
-    async def fetch_movie_data(self, movie_identifier: str) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
+    async def fetch_movie_data(self, movie_identifier: str, limit: int = 100) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
         """
         Fetch movie details and reviews.
 
         Args:
             movie_identifier: IMDb title URL/ID or free-text movie query.
+            limit: Maximum number of reviews to fetch.
 
         Returns:
             Tuple of (movie_data, reviews).
@@ -63,7 +64,7 @@ class IMDbScraper:
             logger.info("Resolved movie identifier '%s' -> %s", movie_identifier, movie_id)
 
             movie_data = await self._get_movie_details(movie_id)
-            reviews = await self._get_reviews(movie_id)
+            reviews = await self._get_reviews(movie_id, limit=limit)
 
             if not reviews:
                 raise ValueError("No IMDb user reviews were found for this title.")

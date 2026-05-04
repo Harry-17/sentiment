@@ -1,4 +1,5 @@
 import logging
+import os
 import re
 from collections import Counter
 from typing import Any, Dict, List
@@ -180,7 +181,12 @@ class SentimentAnalyzer:
         text = (text or "")[:512]
 
         self._load_models()
-        if self.ml_enabled and self.explainer is not None and self.sentiment_pipe is not None:
+        if (
+            self.ml_enabled
+            and os.getenv("ENABLE_LIME_EXPLAINER", "false").lower() in {"1", "true", "yes"}
+            and self.explainer is not None
+            and self.sentiment_pipe is not None
+        ):
             try:
                 import numpy as np
 
